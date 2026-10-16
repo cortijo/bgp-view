@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+      - name: gofmt
+        run: test -z "$(gofmt -l .)"
+      - name: go vet
+        run: go vet ./...
+      - name: Testes + cobertura (>=70%)
+        run: |
+          go test ./... -coverprofile=coverage.out
+          go tool cover -func=coverage.out | tail -1 | awk -F'[:\t ]+' '{gsub("%","",$NF); if ($NF+0 < 70) {print "cobertura abaixo de 70%: "$NF"%"; exit 1}}'
+      - name: Build do binário
+        run: go build ./...
+      - name: Build da imagem Docker
+        run: docker build -t bgpadvert:ci .

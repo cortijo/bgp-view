@@ -1,0 +1,54 @@
+# Padrão Docker (specs/001-arquitetura.md):
+# - segredos sem default: ${VAR:?}
+# - limites de CPU/RAM configuráveis via .env
+# - raiz read-only, /run em tmpfs, escrita só em volumes
+# - porta >1024, ulimits de arquivos abertos
+
+services:
+  bgpadvert:
+    build:
+      context: .
+      args: {}
+    image: bgpadvert:local
+    restart: unless-stopped
+    ports:
+      - "${BGP_API_PORT:-8080}:8080"
+    env_file:
+      - .env
+    environment:
+      BGP_API_KEY: "${BGP_API_KEY:?defina BGP_API_KEY no .env}"
+      BGP_MD5: "${BGP_MD5:?defina BGP_MD5 no .env}"
+      BGP_NEIGHBOR_ADDR: "${BGP_NEIGHBOR_ADDR:?defina BGP_NEIGHBOR_ADDR no .env}"
+      BGP_LOCAL_ASN: "${BGP_LOCAL_ASN:?defina BGP_LOCAL_ASN no .env}"
+      BGP_NEIGHBOR_ASN: "${BGP_NEIGHBOR_ASN:?defina BGP_NEIGHBOR_ASN no .env}"
+      BGP_DB_PATH: /data/bgpadvert.db
+    volumes:
+      - bgp_data:/data
+    read_only: true
+    tmpfs:
+      - /run:size=16m
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    deploy:
+      resources:
+        limits:
+          cpus: "${CPU_LIMIT:-1}"
+          memory: "${MEM_LIMIT:-512M}"
+        reservations:
+          cpus: "0.1"
+          memory: 64M
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+volumes:
+  bgp_data:

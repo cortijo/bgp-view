@@ -1,0 +1,24 @@
+run:
+  timeout: 3m
+
+linters:
+  enable:
+    - errcheck
+    - govet
+    - staticcheck
+    - unused
+    - ineffassign
+    - gosimple
+
+linters-settings:
+  govet:
+    enable-all: true
+    disable:
+      - fieldalignment
+
+issues:
+  exclude-use-default: false
+  # Código e comentários deste projeto são em pt-BR; misspell (inglês) gera falso positivo.
+  exclude-rules:
+    - linters: [misspell]
+      path: .

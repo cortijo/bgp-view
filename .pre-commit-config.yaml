@@ -1,0 +1,9 @@
+repos:
+  - repo: local
+    hooks:
+      - id: verify-quick
+        name: verify:quick (gofmt + vet + lint alterados + testes relacionados)
+        entry: ./scripts/verify.sh quick
+        language: system
+        pass_filenames: false
+        always_run: true

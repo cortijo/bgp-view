@@ -1,0 +1,37 @@
+# Segredos e config local
+.env
+
+# Fila de trabalho e temporários (padrão da skill)
+tasks/
+tmp/
+.grill/
+
+# Binários e artefatos de build
+bgpadvert
+/bin/
+/dist/
+*.exe
+*.test
+*.out
+
+# Go
+vendor/
+
+# Cobertura
+coverage.out
+coverage.html
+
+# Logs
+*.log
+logs/
+
+# SQLite (volume local fora do compose)
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Editor/OS
+.DS_Store
+.idea/
+.vscode/

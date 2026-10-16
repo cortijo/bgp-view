@@ -1,0 +1,127 @@
+openapi: 3.1.0
+info:
+  title: bgpadvert API
+  version: 0.1.0
+  description: >
+    API de anúncios BGP para peering eBGP com roteador Huawei.
+    Toda operação é auditada. Autenticação por API key no header X-API-Key.
+servers:
+  - url: http://localhost:8080
+security:
+  - apiKey: []
+paths:
+  /health:
+    get:
+      summary: Liveness
+      security: []
+      responses:
+        '200': { description: OK }
+  /ready:
+    get:
+      summary: Readiness (503 se sessão BGP degraded)
+      security: []
+      responses:
+        '200': { description: Pronto }
+        '503': { description: Sessão BGP degraded }
+  /metrics:
+    get:
+      summary: Métricas Prometheus
+      security: []
+      responses:
+        '200': { description: Métricas }
+  /v1/bgp/session:
+    get:
+      summary: Estado da sessão BGP
+      responses:
+        '200': { description: Estado }
+  /v1/prefixes:
+    get:
+      summary: Listar prefixos
+      parameters:
+        - { in: query, name: ativo, schema: { type: boolean } }
+        - { in: query, name: community, schema: { type: string } }
+        - { in: query, name: limit, schema: { type: integer, default: 50 } }
+      responses:
+        '200': { description: Lista }
+    post:
+      summary: Anunciar prefixo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [cidr]
+              properties:
+                cidr: { type: string, examples: ["203.0.113.0/24"] }
+                comunities:
+                  type: array
+                  items: { type: string, examples: ["65000:666"] }
+                perfil: { type: string, nullable: true }
+      responses:
+        '201': { description: Criado }
+        '202': { description: Aceito e enfileirado (BGP degraded) }
+        '400': { description: CIDR ou community inválidos }
+        '409': { description: Prefixo já existente e ativo }
+        '401': { description: API key ausente/inválida }
+        '422': { description: Limite de prefixos excedido }
+  /v1/prefixes/{cidr}:
+    parameters:
+      - { in: path, name: cidr, required: true, schema: { type: string } }
+    patch:
+      summary: Atualizar communities/perfil de um prefixo
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                comunities: { type: array, items: { type: string } }
+                perfil: { type: string, nullable: true }
+      responses:
+        '200': { description: Atualizado }
+        '404': { description: Não encontrado }
+    delete:
+      summary: Remover (withdraw) prefixo
+      responses:
+        '204': { description: Removido }
+        '404': { description: Não encontrado }
+  /v1/profiles:
+    get:
+      summary: Listar perfis de community
+      responses:
+        '200': { description: Lista }
+    post:
+      summary: Criar perfil
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nome, comunities]
+              properties:
+                nome: { type: string, examples: ["rtbh"] }
+                comunities: { type: array, items: { type: string } }
+      responses:
+        '201': { description: Criado }
+        '409': { description: Perfil já existe }
+  /v1/profiles/{nome}:
+    parameters:
+      - { in: path, name: nome, required: true, schema: { type: string } }
+    patch:
+      summary: Atualizar perfil (reaplica em prefixos referenciados)
+      responses:
+        '200': { description: Atualizado }
+        '404': { description: Não encontrado }
+    delete:
+      summary: Remover perfil
+      responses:
+        '204': { description: Removido }
+        '409': { description: Perfil referenciado por prefixo }
+components:
+  securitySchemes:
+    apiKey:
+      type: apiKey
+      in: header
+      name: X-API-Key
