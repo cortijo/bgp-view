@@ -1,0 +1,14 @@
+.git
+.github
+.env
+tasks/
+tmp/
+.grill/
+docs/
+specs/
+*.md
+.githooks/
+.golangci.yml
+.pre-commit-config.yaml
+scripts/
+Makefile
